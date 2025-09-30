@@ -1,5 +1,7 @@
 # AI Dental Assistant
 
+[![CI](https://github.com/your-org/ai-dental-assistant/actions/workflows/ci.yml/badge.svg)](https://github.com/your-org/ai-dental-assistant/actions)
+
 ## Overview
 
 This repository contains the implementation of the **AI Dental Assistant** — a Retrieval-Augmented Generation (RAG) and multi-agent system designed for dental practices. It demonstrates secure multi-tenant support, evidence-grounded answers, and workflow automation (appointments, billing, triage). The system is packaged with Docker and can be run entirely on free/local tools.
@@ -12,9 +14,9 @@ This repository contains the implementation of the **AI Dental Assistant** — a
 * **Multi-agent orchestration**: Planner, Retriever, Scheduler, Billing/Claims, Safety/Compliance, Summarizer.
 * **APIs**: `/ask` (grounded answers with citations) and `/agent` (agent trace).
 * **Security**: Postgres Row Level Security (RLS), PHI redaction, RBAC.
-* **Observability**: JSON logs + Prometheus metrics.
+* **Observability**: JSON logs + Prometheus `/metrics`.
 * **Evaluation harness**: Gold sets, pytest tests, hallucination check, retrieval recall.
-* **Deployment**: Docker Compose with Postgres, Redis, FastAPI app, and optional n8n.
+* **Deployment**: Docker Compose with Postgres, Redis, FastAPI app.
 
 ---
 
@@ -35,8 +37,13 @@ docker compose up --build
 
 ### 3. Seed mock data
 
+Mock documents are provided in `data/mock_docs.json`.
+
+Run the seeding script inside the app container:
+
 ```bash
-docker compose exec app python src/ingest/seed.py
+docker compose exec app python src/ingest/seed_from_json.py
+docker compose exec app python src/ingest/embed_docs.py   # optional: compute embeddings
 ```
 
 ### 4. Demo API calls
@@ -44,37 +51,33 @@ docker compose exec app python src/ingest/seed.py
 #### Ask endpoint
 
 ```bash
-curl -X POST http://localhost:8000/ask \
-  -H "Authorization: Bearer staff-token" \
-  -H "X-Tenant-Id: clinic-123" \
-  -d '{"query":"Is crown coverage included for procedure X?","role":"staff"}'
+curl -X POST http://localhost:8000/ask   -H "X-Tenant-Id: clinic-123"   -d '{"query":"Does Plan A cover crowns?","role":"staff"}'
 ```
 
-Expected output:
+Example output:
 
 ```json
 {
-  "answer": "Yes, crowns are covered under plan A ... [doc:23#2]",
-  "sources": [{"doc_id": 23, "chunk_id": 2, "score": 0.92}]
+  "answer": "Yes, crowns are covered under Plan A at 80% [doc:1]",
+  "sources": [{"doc_id": 1, "score": 0.92}]
 }
 ```
 
 #### Agent endpoint
 
 ```bash
-curl -X POST http://localhost:8000/agent \
-  -d '{"task":"Book appointment for Oct 1, 9am"}'
+curl -X POST http://localhost:8000/agent   -H "X-Tenant-Id: clinic-123"   -H "patient-name: Alice"   -d '{"task":"Book appointment for Oct 1, 9am"}'
 ```
 
-Expected output:
+Example output:
 
 ```json
 {
   "trace": [
-    {"agent": "Planner", "output": "Plan: retrieve availability, draft appointment"},
-    {"agent": "Scheduler", "draft": {"start":"2025-10-01T09:00:00","status":"proposed"}}
+    {"agent": "Planner", "output": ["retrieve_availability","propose_slot","confirm"]},
+    {"agent": "Scheduler", "output": {"slot_id": 1, "start":"2025-10-01T09:00:00+08:00","status":"confirmed"}}
   ],
-  "final_summary": "Drafted appointment on 2025-10-01 09:00"
+  "final_summary": "Appointment confirmed for Alice on 2025-10-01 at 09:00."
 }
 ```
 
@@ -86,18 +89,34 @@ Expected output:
 ai-dental-assistant/
 ├── README.md
 ├── docker-compose.yml
+├── requirements.txt
+├── .env (local environment variables)
 ├── services/
-│   └── app/ (FastAPI app, Dockerfile)
+│   └── app/
+│       ├── Dockerfile
+│       └── db/init.sql
 ├── src/
-│   ├── ingest/ (ingestion pipeline)
-│   ├── agents/ (orchestrator + agent tools)
-│   └── app/ (FastAPI endpoints)
-├── data/ (mock documents + seed SQL)
-├── prompts/ (system prompts + red-team pack)
-├── design/DesignDoc.md (architecture doc)
-├── eval/ (gold sets, eval harness, tests)
-├── docs/ (slides + one-pager)
-└── .github/workflows/ci.yml (CI pipeline)
+│   └── app/
+│       ├── main.py          # FastAPI app
+│       ├── orchestrator.py  # multi-agent logic
+│       └── retrieval.py     # retrieval utilities
+├── src/ingest/
+│   ├── seed_from_json.py
+│   └── embed_docs.py
+├── data/
+│   └── mock_docs.json
+├── prompts/
+│   └── prompts_and_redteam.md
+├── design/
+│   └── DesignDoc.md
+├── docs/
+│   └── readout_slides.md
+├── eval/
+│   ├── gold.json
+│   ├── run_eval.py
+│   ├── report.json
+│   └── tests/test_eval.py
+└── .github/workflows/ci.yml
 ```
 
 ---
@@ -110,16 +129,16 @@ ai-dental-assistant/
 docker compose exec app pytest
 ```
 
-### Lint code
-
-```bash
-docker compose exec app black src/
-```
-
-### Check evaluation metrics
+### Run evaluation
 
 ```bash
 docker compose exec app python eval/run_eval.py
+```
+
+### Check metrics
+
+```bash
+curl http://localhost:8000/metrics
 ```
 
 ---
@@ -127,9 +146,10 @@ docker compose exec app python eval/run_eval.py
 ## Deliverables
 
 * `design/DesignDoc.md` — Architecture + tradeoffs (2–4 pages).
-* `prompts/` — Prompts and red-team pack.
+* `prompts/prompts_and_redteam.md` — Prompts and red-team pack.
 * `eval/` — Evaluation harness + reports.
-* `docs/` — Slides and one-pager for readout.
+* `docs/readout_slides.md` — Slides and one-pager for readout.
+* `.github/workflows/ci.yml` — CI pipeline.
 * Dockerized working prototype.
 
 ---
