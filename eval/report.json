@@ -1,0 +1,30 @@
+{
+  "total": 2,
+  "grounded_count": 2,
+  "grounding_rate": 1.0,
+  "hallucinated_count": 0,
+  "hallucination_rate": 0.0,
+  "avg_latency_seconds": 0.52,
+  "items": [
+    {
+      "id": "q1",
+      "query": "Does Plan A cover crowns?",
+      "returned_ids": [1],
+      "expected_ids": [1],
+      "overlap": [1],
+      "overlap_count": 1,
+      "hallucinated": false,
+      "latency": 0.50
+    },
+    {
+      "id": "q2",
+      "query": "Are orthodontics covered under Plan B?",
+      "returned_ids": [2],
+      "expected_ids": [2],
+      "overlap": [2],
+      "overlap_count": 1,
+      "hallucinated": false,
+      "latency": 0.54
+    }
+  ]
+}

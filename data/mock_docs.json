@@ -1,0 +1,26 @@
+[
+  {
+    "id": "doc1",
+    "tenant_id": "clinic-123",
+    "doc_type": "coverage",
+    "effective_date": "2025-01-01",
+    "chunk_text": "Plan A covers crowns at 80%.",
+    "source_doc": "PlanA_Benefits.pdf"
+  },
+  {
+    "id": "doc2",
+    "tenant_id": "clinic-123",
+    "doc_type": "coverage",
+    "effective_date": "2025-01-01",
+    "chunk_text": "Plan B excludes orthodontics.",
+    "source_doc": "PlanB_Benefits.pdf"
+  },
+  {
+    "id": "doc3",
+    "tenant_id": "clinic-456",
+    "doc_type": "coverage",
+    "effective_date": "2025-02-01",
+    "chunk_text": "Plan X covers implants only if medically necessary.",
+    "source_doc": "PlanX_Benefits.pdf"
+  }
+]
